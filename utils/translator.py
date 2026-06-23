@@ -1,14 +1,11 @@
 import anthropic
 from config import ANTHROPIC_API_KEY
+import asyncio
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
 async def translate_and_format_news(title: str, summary: str, source: str) -> str:
-    """
-    Yangilikni o'zbekchaga tarjima qilib, chiroyli Telegram post qiladi.
-    Manba ko'rsatilmaydi.
-    """
     prompt = f"""Quyidagi futbol yangiligini o'zbek tiliga tarjima qilib, Telegram kanal uchun chiroyli post yoz.
 
 Sarlavha: {title}
@@ -18,16 +15,21 @@ Qoidalar:
 - Faqat o'zbek tilida yoz
 - Post sarlavhasi katta va emotsional bo'lsin (emoji bilan)
 - 3-5 gap, qisqa va aniq
-- Kerakli joyda emoji ishlat (⚽🔥🏆💥👑 va h.k.)
+- Kerakli joyda emoji ishlat
 - Manba, link, hashtag YOZMA
-- Faqat postni yoz, boshqa hech narsa qo'shma
+- HTML teglari ISHLATMA (bold, italic va h.k. yozma)
+- Faqat oddiy matn va emoji yoz
 
 Post:"""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=500,
-        messages=[{"role": "user", "content": prompt}]
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=500,
+            messages=[{"role": "user", "content": prompt}]
+        )
     )
     return response.content[0].text.strip()
 
@@ -38,9 +40,6 @@ async def translate_and_format_result(
     league_name: str, match_date: str,
     scorers: list = None
 ) -> str:
-    """
-    O'yin natijasini o'zbekchaga tarjima qilib, chiroyli post qiladi.
-    """
     scorers_text = ""
     if scorers:
         scorers_text = f"Gollar: {', '.join(scorers)}"
@@ -54,18 +53,22 @@ Sana: {match_date}
 
 Qoidalar:
 - O'zbek tilida, chiroyli, emotsional
-- Natija yaxshi ko'zga tashlansin (katta raqamlar yoki emoji)
+- Natija yaxshi ko'zga tashlansin
 - Kim g'olib, mag'lub yoki durrang bo'lganini ayt
-- Golchilar bo'lsa qayt
 - 3-5 qator
 - Manba, link, hashtag YOZMA
-- Faqat postni yoz
+- HTML teglari ISHLATMA
+- Faqat oddiy matn va emoji yoz
 
 Post:"""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=400,
-        messages=[{"role": "user", "content": prompt}]
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=400,
+            messages=[{"role": "user", "content": prompt}]
+        )
     )
     return response.content[0].text.strip()
