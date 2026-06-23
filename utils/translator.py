@@ -1,24 +1,36 @@
 import anthropic
 from config import ANTHROPIC_API_KEY
 import asyncio
+import re
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
+def clean_text(text: str) -> str:
+    text = text.replace("||", "")
+    text = text.replace("**", "")
+    text = text.replace("__", "")
+    text = text.replace("~~", "")
+    text = text.replace("`", "")
+    text = text.replace("•", "-")
+    text = text.replace("<b>", "").replace("</b>", "")
+    text = text.replace("<i>", "").replace("</i>", "")
+    text = text.replace("<u>", "").replace("</u>", "")
+    return text.strip()
+
+
 async def translate_and_format_news(title: str, summary: str, source: str) -> str:
-    prompt = f"""Quyidagi futbol yangiligini o'zbek tiliga tarjima qilib, Telegram kanal uchun chiroyli post yoz.
+    prompt = f"""Quyidagi futbol yangiligini o'zbek tiliga tarjima qilib, Telegram kanal uchun post yoz.
 
 Sarlavha: {title}
 Mazmun: {summary}
 
 Qoidalar:
 - Faqat o'zbek tilida yoz
-- Post sarlavhasi katta va emotsional bo'lsin (emoji bilan)
+- Emoji ishlat
 - 3-5 gap, qisqa va aniq
-- Kerakli joyda emoji ishlat
 - Manba, link, hashtag YOZMA
-- HTML teglari ISHLATMA (bold, italic va h.k. yozma)
-- Faqat oddiy matn va emoji yoz
+- Hech qanday format belgisi ishlatma
 
 Post:"""
 
@@ -31,7 +43,7 @@ Post:"""
             messages=[{"role": "user", "content": prompt}]
         )
     )
-    return response.content[0].text.strip()
+    return clean_text(response.content[0].text)
 
 
 async def translate_and_format_result(
@@ -44,7 +56,7 @@ async def translate_and_format_result(
     if scorers:
         scorers_text = f"Gollar: {', '.join(scorers)}"
 
-    prompt = f"""Quyidagi futbol o'yini natijasi uchun Telegram kanal posti yoz. O'zbek tilida.
+    prompt = f"""Futbol o'yini natijasi uchun Telegram post yoz. O'zbek tilida.
 
 Liga: {league_name}
 {home_team} {home_score} - {away_score} {away_team}
@@ -52,13 +64,11 @@ Sana: {match_date}
 {scorers_text}
 
 Qoidalar:
-- O'zbek tilida, chiroyli, emotsional
-- Natija yaxshi ko'zga tashlansin
-- Kim g'olib, mag'lub yoki durrang bo'lganini ayt
+- O'zbek tilida, emotsional
+- Emoji ishlat
 - 3-5 qator
 - Manba, link, hashtag YOZMA
-- HTML teglari ISHLATMA
-- Faqat oddiy matn va emoji yoz
+- Hech qanday format belgisi ishlatma
 
 Post:"""
 
@@ -71,4 +81,4 @@ Post:"""
             messages=[{"role": "user", "content": prompt}]
         )
     )
-    return response.content[0].text.strip()
+    return clean_text(response.content[0].text)
